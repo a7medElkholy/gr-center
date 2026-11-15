@@ -3,6 +3,7 @@ import { supabase, money } from './supabase'
 
 export default function Dashboard() {
   const [d, setD] = useState(null), [err, setErr] = useState('')
+  const monthName = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })
   useEffect(() => {
     const m = new Date(); m.setDate(1); const from = m.toISOString().slice(0, 10)
     Promise.all([
@@ -12,11 +13,15 @@ export default function Dashboard() {
       supabase.from('expenses').select('category,amount').gte('expense_date', from),
       supabase.from('invoices').select('type,total').gte('invoice_date', from),
       supabase.from('salaries').select('net').eq('paid', true).gte('month', from),
-    ]).then(([cash, stock, partners, exp, inv, sal]) => {
-      const e = [cash, stock, partners, exp, inv, sal].find(r => r.error)
+      supabase.from('products').select('id,buy_price'),
+    ]).then(([cash, stock, partners, exp, inv, sal, prod]) => {
+      const e = [cash, stock, partners, exp, inv, sal, prod].find(r => r.error)
       if (e) return setErr(e.error.message)
       const sum = (a, f) => a.reduce((s, x) => s + Number(f(x)), 0)
+      const price = Object.fromEntries(prod.data.map(p => [p.id, Number(p.buy_price)]))
+      const val = k => stock.data.filter(s => s.kind === k && Number(s.qty_on_hand) > 0).reduce((a, s) => a + Number(s.qty_on_hand) * (price[s.id] || 0), 0)
       setD({
+        matVal: val('material'), devVal: val('device'),
         cash: cash.data, totalCash: sum(cash.data, x => x.balance),
         low: stock.data.filter(s => Number(s.qty_on_hand) <= Number(s.min_stock)),
         customers: partners.data.filter(p => p.kind === 'customer' && p.balance > 0),
@@ -33,9 +38,12 @@ export default function Dashboard() {
   const weOwe = d.suppliers.reduce((s, x) => s + Number(x.balance), 0)
   return (
     <>
-      <h2>لوحة التحكم</h2>
+      <h2>لوحة التحكم - {monthName}</h2>
       <div className="grid">
-        <div className="card big"><div className="lbl">إجمالي النقدية</div><div className="val">{money(d.totalCash)}</div></div>
+        <div className="card big"><div className="lbl">رأس المال (نقدية + خامات + أجهزة)</div><div className="val">{money(d.totalCash + d.matVal + d.devVal)}</div></div>
+        <div className="card"><div className="lbl">إجمالي النقدية</div><div className="val">{money(d.totalCash)}</div></div>
+        <div className="card"><div className="lbl">قيمة الخامات بالمخزن</div><div className="val">{money(d.matVal)}</div></div>
+        <div className="card"><div className="lbl">قيمة الأجهزة بالمخزن</div><div className="val">{money(d.devVal)}</div></div>
         <div className="card"><div className="lbl">مبيعات الشهر</div><div className="val">{money(d.sales)}</div></div>
         <div className="card"><div className="lbl">مشتريات الشهر</div><div className="val">{money(d.purchases)}</div></div>
         <div className="card"><div className="lbl">مصاريف الشهر</div><div className="val">{money(d.expTotal)}</div></div>

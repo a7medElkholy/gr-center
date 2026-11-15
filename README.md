@@ -1,4 +1,4 @@
-# GR - نظام إدارة مركز التكييفات
+# Star Air Life - نظام إدارة مركز التكييفات
 1. شغّل gr_schema.sql في Supabase > SQL Editor
 2. Supabase > Authentication > Users: أضف مستخدم (بريد + كلمة سر)
 3. انسخ .env.example إلى .env وحط الـ URL والـ anon key
@@ -15,3 +15,6 @@
 
 ## الصلاحيات (migration_03)
 شغّل migration_03.sql، وأعد نشر الـ Edge Function admin-users (فيها أمر جديد لحفظ الصلاحيات).
+
+## تحديث 04
+شغّل migration_04.sql (بيضيف بيانات الأجهزة والخامات والخصم والفواتير المجمعة وبيصلّح كشف الحساب).

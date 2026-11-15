@@ -8,6 +8,8 @@ import Partners from './Partners'
 import Expenses from './Expenses'
 import Employees from './Employees'
 import Users from './Users'
+import Cash from './Cash'
+import Inventory from './Inventory'
 
 function Login() {
   const [email, setEmail] = useState(''), [pw, setPw] = useState(''), [err, setErr] = useState('')
@@ -18,7 +20,8 @@ function Login() {
   }
   return (
     <form className="login" onSubmit={go}>
-      <h2>GR - تسجيل الدخول</h2>
+      <img src="/logo.jpg" alt="Star Air Life" style={{ width: '100%', maxWidth: 240, margin: '0 auto' }} />
+      <h2 style={{ textAlign: 'center', margin: 0 }}>تسجيل الدخول</h2>
       <input type="email" placeholder="البريد الإلكتروني" value={email} onChange={e => setEmail(e.target.value)} required />
       <input type="password" placeholder="كلمة السر" value={pw} onChange={e => setPw(e.target.value)} required />
       {err && <div className="msg err">{err}</div>}
@@ -55,12 +58,14 @@ export default function App() {
   else if (cur === 'customer' || cur === 'supplier') view = <Partners key={cur} kind={cur} level={lv(cur)} />
   else if (cur === 'expenses') view = <Expenses level={lv(cur)} />
   else if (cur === 'employees') view = <Employees level={lv(cur)} />
+  else if (cur === 'cash') view = <Cash level={lv(cur)} />
+  else if (cur === 'inventory') view = <Inventory />
   else if (cur === 'users') view = <Users me={session.user.id} />
 
   return (
     <div className="layout">
       <aside className="side">
-        <h1>GR<small>مركز التكييفات</small></h1>
+        <div className="logo"><img src="/logo.jpg" alt="Star Air Life" /></div>
         {items.map(([k, t]) => <button key={k} className={cur === k ? 'on' : ''} onClick={() => setPage(k)}>{t}</button>)}
         <button onClick={() => supabase.auth.signOut()}>تسجيل خروج</button>
       </aside>

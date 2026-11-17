@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, money } from './supabase'
 
-const SRC = { sale: 'مبيعات', purchase: 'مشتريات', expense: 'مصروف', salary: 'مرتب', partner_payment: 'دفعة', adjustment: 'تعديل رصيد', other: 'أخرى' }
+const SRC = { sale: 'مبيعات', purchase: 'مشتريات', expense: 'مصروف', salary: 'مرتب', partner_payment: 'دفعة', adjustment: 'تعديل رصيد', casual: 'عمالة غير منتظمة', other: 'أخرى' }
 const today = () => new Date().toISOString().slice(0, 10)
 
 export default function Cash({ level = 3 }) {

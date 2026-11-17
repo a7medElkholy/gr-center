@@ -14,8 +14,9 @@ export default function Dashboard() {
       supabase.from('invoices').select('type,total').gte('invoice_date', from),
       supabase.from('salaries').select('net').eq('paid', true).gte('month', from),
       supabase.from('products').select('id,buy_price'),
-    ]).then(([cash, stock, partners, exp, inv, sal, prod]) => {
-      const e = [cash, stock, partners, exp, inv, sal, prod].find(r => r.error)
+      supabase.from('casual_labor').select('amount').gte('work_date', from),
+    ]).then(([cash, stock, partners, exp, inv, sal, prod, cas]) => {
+      const e = [cash, stock, partners, exp, inv, sal, prod, cas].find(r => r.error)
       if (e) return setErr(e.error.message)
       const sum = (a, f) => a.reduce((s, x) => s + Number(f(x)), 0)
       const price = Object.fromEntries(prod.data.map(p => [p.id, Number(p.buy_price)]))
@@ -26,7 +27,7 @@ export default function Dashboard() {
         low: stock.data.filter(s => Number(s.qty_on_hand) <= Number(s.min_stock)),
         customers: partners.data.filter(p => p.kind === 'customer' && p.balance > 0),
         suppliers: partners.data.filter(p => p.kind === 'supplier' && p.balance > 0),
-        expTotal: sum(exp.data, x => x.amount) + sum(sal.data, x => x.net),
+        expTotal: sum(exp.data, x => x.amount) + sum(sal.data, x => x.net) + sum(cas.data, x => x.amount),
         sales: sum(inv.data.filter(i => i.type === 'sale'), x => x.total),
         purchases: sum(inv.data.filter(i => i.type === 'purchase'), x => x.total),
       })

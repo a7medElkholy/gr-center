@@ -9,16 +9,17 @@ export default function Inventory() {
   useEffect(() => {
     (async () => {
       try {
-        const [items, invs, exps, sals, txs] = await Promise.all([
+        const [items, invs, exps, sals, txs, cas] = await Promise.all([
           fetchAll(() => supabase.from('invoice_items').select('product_id,qty,invoices!inner(type,invoice_date)')),
           fetchAll(() => supabase.from('invoices').select('type,invoice_date,total,discount')),
           fetchAll(() => supabase.from('expenses').select('expense_date,amount')),
           fetchAll(() => supabase.from('salaries').select('month,net').eq('paid', true)),
           fetchAll(() => supabase.from('cash_transactions').select('tx_date,direction,amount')),
+          fetchAll(() => supabase.from('casual_labor').select('work_date,amount')),
         ])
         const pr = await supabase.from('products').select('id,name,kind,unit,buy_price').order('name')
         const ac = await supabase.from('cash_accounts').select('opening_balance')
-        setD({ items, invs, exps, sals, txs, products: pr.data || [], opening: sum(ac.data || [], a => a.opening_balance) })
+        setD({ items, invs, exps, sals, txs, cas, products: pr.data || [], opening: sum(ac.data || [], a => a.opening_balance) })
       } catch (e) { setErr(e.message) }
     })()
   }, [])
@@ -26,7 +27,7 @@ export default function Inventory() {
   const months = useMemo(() => {
     if (!d) return []
     const cur = new Date().toISOString().slice(0, 7)
-    const ds = [...d.invs.map(x => x.invoice_date), ...d.exps.map(x => x.expense_date), ...d.sals.map(x => x.month), ...d.txs.map(x => x.tx_date)]
+    const ds = [...d.invs.map(x => x.invoice_date), ...d.exps.map(x => x.expense_date), ...d.sals.map(x => x.month), ...d.txs.map(x => x.tx_date), ...d.cas.map(x => x.work_date)]
       .filter(Boolean).map(x => x.slice(0, 7)).filter(x => x <= cur)
     let m = ds.length ? ds.reduce((a, b) => (a < b ? a : b)) : cur
     const out = []
@@ -41,7 +42,7 @@ export default function Inventory() {
       sales: sum(sales, i => i.total), disc: sum(sales, i => i.discount),
       purchases: sum(d.invs.filter(i => i.type === 'purchase' && inM(i.invoice_date)), i => i.total),
       exp: sum(d.exps.filter(x => inM(x.expense_date)), x => x.amount),
-      sal: sum(d.sals.filter(x => inM(x.month)), x => x.net),
+      sal: sum(d.sals.filter(x => inM(x.month)), x => x.net) + sum(d.cas.filter(x => inM(x.work_date)), x => x.amount),
       cashEnd: d.opening + sum(d.txs.filter(t => (t.tx_date || '').slice(0, 7) <= m), t => (t.direction === 'in' ? t.amount : -t.amount)),
     }
   }
@@ -72,7 +73,7 @@ export default function Inventory() {
       </p>
       {month === 'all' ? (
         <table>
-          <thead><tr><th>الشهر</th><th>المبيعات</th><th>الخصومات</th><th>المشتريات</th><th>المصاريف</th><th>المرتبات</th><th>رصيد الخزن آخر الشهر</th><th></th></tr></thead>
+          <thead><tr><th>الشهر</th><th>المبيعات</th><th>الخصومات</th><th>المشتريات</th><th>المصاريف</th><th>المرتبات والعمالة</th><th>رصيد الخزن آخر الشهر</th><th></th></tr></thead>
           <tbody>
             {months.map(m => { const x = summary(m); return (
               <tr key={m}><td>{mName(m)}</td><td>{money(x.sales)}</td><td>{money(x.disc)}</td><td>{money(x.purchases)}</td><td>{money(x.exp)}</td><td>{money(x.sal)}</td><td>{money(x.cashEnd)}</td>
@@ -87,7 +88,7 @@ export default function Inventory() {
             <div className="card"><div className="lbl">الخصومات</div><div className="val">{money(s.disc)}</div></div>
             <div className="card"><div className="lbl">المشتريات</div><div className="val">{money(s.purchases)}</div></div>
             <div className="card"><div className="lbl">المصاريف</div><div className="val">{money(s.exp)}</div></div>
-            <div className="card"><div className="lbl">المرتبات</div><div className="val">{money(s.sal)}</div></div>
+            <div className="card"><div className="lbl">المرتبات والعمالة</div><div className="val">{money(s.sal)}</div></div>
             <div className="card big"><div className="lbl">رصيد الخزن آخر الشهر (بيترحّل للشهر اللي بعده)</div><div className="val">{money(s.cashEnd)}</div></div>
           </div>
           <p>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, money } from './supabase'
+import Casual from './Casual'
 
 function Row({ emp, sal, month, accounts, onDone, onEdit, onDel, level }) {
   const [v, setV] = useState({ bonus: '', deduction: '', advance: '', account_id: '' }), [err, setErr] = useState('')
@@ -28,7 +29,7 @@ function Row({ emp, sal, month, accounts, onDone, onEdit, onDel, level }) {
   )
 }
 
-export default function Employees({ level = 3 }) {
+function Staff({ level = 3 }) {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)), [emps, setEmps] = useState([]), [sals, setSals] = useState([]), [accounts, setAccounts] = useState([])
   const [f, setF] = useState({ name: '', job_title: '', base_salary: '' }), [open, setOpen] = useState(false), [eid, setEid] = useState(null)
   async function load() {
@@ -54,8 +55,7 @@ export default function Employees({ level = 3 }) {
   const paidTotal = sals.reduce((s, x) => s + Number(x.net), 0)
   return (
     <>
-      <h2>الموظفين والمرتبات</h2>
-      {level >= 2 && <p><button className="btn" onClick={() => { setOpen(!open); setEid(null); setF({ name: '', job_title: '', base_salary: '' }) }}>{open ? 'إغلاق' : 'إضافة موظف'}</button></p>}
+            {level >= 2 && <p><button className="btn" onClick={() => { setOpen(!open); setEid(null); setF({ name: '', job_title: '', base_salary: '' }) }}>{open ? 'إغلاق' : 'إضافة موظف'}</button></p>}
       {open && (
         <form className="card" onSubmit={add} style={{ marginBottom: 20 }}>
           <div className="row">
@@ -74,6 +74,20 @@ export default function Employees({ level = 3 }) {
           {emps.map(e => <Row key={e.id + month} emp={e} sal={sals.find(s => s.employee_id === e.id)} month={month} accounts={accounts} onDone={load} onEdit={edit} onDel={del} level={level} />)}
         </tbody>
       </table>
+    </>
+  )
+}
+
+export default function Employees({ level = 3 }) {
+  const [tab, setTab] = useState('staff')
+  return (
+    <>
+      <h2>الموظفين والمرتبات</h2>
+      <p>
+        <button className={'btn ' + (tab === 'staff' ? '' : 'sec')} onClick={() => setTab('staff')}>الموظفين المنتظمين</button>{' '}
+        <button className={'btn ' + (tab === 'casual' ? '' : 'sec')} onClick={() => setTab('casual')}>العمالة غير المنتظمة</button>
+      </p>
+      {tab === 'staff' ? <Staff level={level} /> : <Casual level={level} />}
     </>
   )
 }
